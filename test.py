@@ -8,6 +8,7 @@ if __name__ == '__main__':
     getStandard = config['getStandard']
     league = config['league']
     poesessid = config['poesessid']
+    character = config['character']
     SLEEP = config['sleep']
 
     # print(poeq.getLeagues())
@@ -15,8 +16,8 @@ if __name__ == '__main__':
     # poeq.setup('Standard', poeq.ACCOUNT, poeq.POESESSID)
     # poeq.getAccount(poeq.ACCOUNT)
 
-    out = poeq.getCharacterInventory('EwreckDefunct')
-    charDict = poeq.readFromFile('EwreckDefunct')
+    out = poeq.getCharacterInventory(character)
+    charDict = poeq.readFromFile(character)
     print(charDict)
     # poeq.dumpToFile('SalWrendMkII.json', out)
 

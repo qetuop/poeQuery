@@ -2,6 +2,7 @@
   "account":"",
   "league":"",
   "poesessid":"",
+  "character":"",
   "sleep": 1.1,
   "getStandard":false
 }

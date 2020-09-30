@@ -1,11 +1,13 @@
 # poeQuery
-git clone https://github.com/qetuop/poeQuery.git poeq
+```
+git clone https://github.com/qetuop/poeQuery.git poeQuery
 cd poeq
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+```
+```cp config.json.default config.json```
 
-cp config.json.default config.json
-# edit config.json
+edit config.json
 
-python3 test.py 
+```python3 test.py``` 
