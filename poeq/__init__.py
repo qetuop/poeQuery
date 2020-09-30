@@ -59,6 +59,16 @@ def getLeagues():
     out = grabData(url)
     return out
 
+# ["Standard", "Hardcore",...]
+def getLeagueNames():
+    allLeagues = getLeagues()
+
+    leagues = []
+    for league in allLeagues:
+        leagues.append(league['id'])
+
+    return leagues
+
 
 def getNumTabs(league):
     url = 'https://pathofexile.com/character-window/get-stash-items?league=%s&accountName=%s' %(league,account)
