@@ -1,0 +1,9 @@
+venv
+.idea
+
+jsonData/*
+json_bak/*
+config.json
+bak/
+data/
+*.bak
