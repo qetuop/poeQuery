@@ -1,7 +1,9 @@
 venv
 .idea
-*.pyc
-__pycache__
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
 
 jsonData/*
 json_bak/*
