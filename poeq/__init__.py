@@ -1,3 +1,4 @@
+import time
 import requests
 import json
 from time import sleep
@@ -12,6 +13,35 @@ account = None
 poesessid = None
 cookies = None
 
+'''
+limit / per / timeout
+
+x-rate-limit-account: 45:60:60,240:240:900
+limit of 45 requests every 60 seconds; 60 second timeout if limit exceeded
+limit of 240 requests every 240 seconds; 900 second timeout if limit 
+'''
+#rateLimit = {'short':[0,0,0], 'long':[0,0,0]}
+rateLimit = {'short':{'curr':0, 'per':0, 'timeout':0}, 'long':{'curr':0, 'per':0, 'timeout':0}}
+
+
+'''
+curr / per / timeout
+
+x-rate-limit-account-state: 2:60:0,3:240:0
+2 request in the last 60 seconds, no timeout in effect
+3 request in the last 240 seconds, no timeout in effect
+
+x-rate-limit-account-state: 0:60:19,84:240:0 = 19sec before another request can be made, counts down
+
+limit example:
+x-rate-limit-account-state: 45:60:0,75:240:0 = at max requests, next one will limit you
+x-rate-limit-account-state: 46:60:0,76:240:0 = next request - Code 429 returned
+x-rate-limit-account-state: 46:60:60,77:240:0 =  3rd request
+'''
+rateState = {'short':{'curr':0, 'per':0, 'timeout':0}, 'long':{'curr':0, 'per':0, 'timeout':0}}
+
+lastRequest = 0  #
+
 def setup(l, a, p):
     global league, account, poesessid, cookies
     league = l
@@ -20,6 +50,51 @@ def setup(l, a, p):
 
     cookies = dict(POESESSID='%s' % poesessid)
 
+# check rate limits a return...sleep value?
+def rateLimited():
+    sleepVal = 0.0
+
+    #print(rateLimit)
+    #print(rateState)
+
+    # if either state value has a timeout just sleep for that amount
+    sleepVal = max(rateState['short']['timeout'], rateState['long']['timeout'])
+
+    #print(sleepVal, lastRequest)
+
+    # if not limited yet keep us from soon being so...
+    # how
+    if sleepVal != 0:
+        pass
+
+
+    return sleepVal
+
+def updateRate(header):
+    global rateLimit
+    global rateState
+    global lastRequest
+
+    limitAcc = header['X-Rate-Limit-Account'].split(',')  # '45:60:60,240:240:900'
+    limitState = header['X-Rate-Limit-Account-State'].split(',')  # '1:60:0,1:240:0'
+
+    # these shouldn't change often (ever?) but might as well update with every request...is that bad?
+    rateLimit['short']['curr']      = limitAcc[0].split(':')[0]
+    rateLimit['short']['per']       = limitAcc[0].split(':')[1]
+    rateLimit['short']['timeout']   = limitAcc[0].split(':')[2]
+    rateLimit['long']['curr']       = limitAcc[1].split(':')[0]
+    rateLimit['long']['per']        = limitAcc[1].split(':')[1]
+    rateLimit['long']['timeout']    = limitAcc[1].split(':')[2]
+
+    rateState['short']['curr']      = limitState[0].split(':')[0]
+    rateState['short']['per']       = limitState[0].split(':')[1]
+    rateState['short']['timeout']   = limitState[0].split(':')[2]
+    rateState['long']['curr']       = limitState[1].split(':')[0]
+    rateState['long']['per']        = limitState[1].split(':')[1]
+    rateState['long']['timeout']    = limitState[1].split(':')[2]
+
+    lastRequest = time.time()
+
 '''
 Code	Text	Description
 200	OK	The request succeeded.
@@ -27,17 +102,34 @@ Code	Text	Description
 404	Not Found	The requested resource was not found.
 429	Too many requests	You are making too many API requests and have been rate limited.
 500	Internal Server Error	We had a problem processing your request. Please try again later or post a bug report.
+
+return "Returns the json-encoded content of a response, if any" --> a list?
 '''
 def grabData( url ):
+    global rateLimit
+    global rateState
+
     wait = SLEEP
 
     #sleep(wait)
-    r = requests.get(url, cookies=cookies)
+    headers = {
+        'User-Agent': 'POE Query (poeq) https://github.com/qetuop/poeQuery'
+    }
+
+    if ( rateLimited() == True ):
+        sleep(1)
+
+    r = requests.get(url, cookies=cookies, headers=headers)
     while (r.status_code == 429 ):
         print('RATE LIMTED....WAITING %s sec before retrying'%wait)
         r = requests.get(url, cookies=cookies)
         wait = wait*2
         sleep(wait)
+
+    # set curr rate limit data - will be out of date depending on how long between the next request but shouldn't
+    # matter that much
+    updateRate(r.headers)
+
 
     return r.json()
 
@@ -96,6 +188,7 @@ def getCharacters(account):
     # can't do by league, at least don't know how
     url = ('http://pathofexile.com/character-window/get-characters?accountName=%s' %account) # requests.Response
     out = grabData(url)
+    dumpToFile('characters.json', out)
     return out
 
 '''
